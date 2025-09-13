@@ -1,214 +1,229 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
-	"net/http"
-	"strconv"
+	"fmt"
+	"strings"
 	"time"
 
-	"rumi-backend/database"
-	"rumi-backend/models"
-
-	"github.com/gorilla/mux"
+	"github.com/pocketbase/pocketbase/core"
 )
 
-func GetNotes(w http.ResponseWriter, r *http.Request) {
-	rows, err := database.DB.Query("SELECT id, title, content, date, created_at, updated_at FROM notes ORDER BY date DESC")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var notes []models.Note
-	for rows.Next() {
-		var note models.Note
-		var dateTime time.Time
-		err := rows.Scan(&note.ID, &note.Title, &note.Content, &dateTime, &note.CreatedAt, &note.UpdatedAt)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		note.Date = models.CustomDate{dateTime}
-		notes = append(notes, note)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notes)
+type NoteRequest struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Date    string `json:"date"`
 }
 
-func GetNote(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func GetNotes(re *core.RequestEvent, app core.App) error {
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, "Invalid note ID", http.StatusBadRequest)
-		return
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	var note models.Note
-	var dateTime time.Time
-	err = database.DB.QueryRow("SELECT id, title, content, date, created_at, updated_at FROM notes WHERE id = ?", id).Scan(
-		&note.ID, &note.Title, &note.Content, &dateTime, &note.CreatedAt, &note.UpdatedAt)
-	note.Date = models.CustomDate{dateTime}
-	
-	if err == sql.ErrNoRows {
-		http.Error(w, "Note not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	records, err := app.FindRecordsByFilter(collection, "1=1", "-date,-created", 0, 0)
+	if err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to fetch notes"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(note)
+	var notes []map[string]interface{}
+	for _, record := range records {
+		notes = append(notes, map[string]interface{}{
+			"id":         record.Id,
+			"title":      record.GetString("title"),
+			"content":    record.GetString("content"),
+			"date":       record.GetString("date"),
+			"created_at": record.GetDateTime("created"),
+			"updated_at": record.GetDateTime("updated"),
+		})
+	}
+
+	return re.JSON(200, notes)
 }
 
-func CreateNote(w http.ResponseWriter, r *http.Request) {
-	var note models.Note
-	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func GetNote(re *core.RequestEvent, app core.App) error {
+	id := re.Request.PathValue("id")
 
-	now := time.Now()
-	note.CreatedAt = now
-	note.UpdatedAt = now
-
-	if note.Date.IsZero() {
-		note.Date = models.CustomDate{time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())}
-	}
-
-	result, err := database.DB.Exec(
-		"INSERT INTO notes (title, content, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		note.Title, note.Content, note.Date.Time, note.CreatedAt, note.UpdatedAt)
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	id, err := result.LastInsertId()
+	record, err := app.FindRecordById(collection, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return re.JSON(404, map[string]string{"error": "Note not found"})
 	}
-	note.ID = int(id)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(note)
+	note := map[string]interface{}{
+		"id":         record.Id,
+		"title":      record.GetString("title"),
+		"content":    record.GetString("content"),
+		"date":       record.GetString("date"),
+		"created_at": record.GetDateTime("created"),
+		"updated_at": record.GetDateTime("updated"),
+	}
+
+	return re.JSON(200, note)
 }
 
-func UpdateNote(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func CreateNote(re *core.RequestEvent, app core.App) error {
+	var noteReq NoteRequest
+	if err := json.NewDecoder(re.Request.Body).Decode(&noteReq); err != nil {
+		return re.JSON(400, map[string]string{"error": "Invalid JSON"})
+	}
+
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, "Invalid note ID", http.StatusBadRequest)
-		return
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	var note models.Note
-	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	record := core.NewRecord(collection)
+	record.Set("title", noteReq.Title)
+	record.Set("content", noteReq.Content)
+
+	if noteReq.Date == "" {
+		record.Set("date", time.Now().Format("2006-01-02"))
+	} else {
+		record.Set("date", noteReq.Date)
 	}
 
-	note.ID = id
-	note.UpdatedAt = time.Now()
-
-	_, err = database.DB.Exec(
-		"UPDATE notes SET title = ?, content = ?, date = ?, updated_at = ? WHERE id = ?",
-		note.Title, note.Content, note.Date.Time, note.UpdatedAt, note.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := app.Save(record); err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to create note"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(note)
+	note := map[string]interface{}{
+		"id":         record.Id,
+		"title":      record.GetString("title"),
+		"content":    record.GetString("content"),
+		"date":       record.GetString("date"),
+		"created_at": record.GetDateTime("created"),
+		"updated_at": record.GetDateTime("updated"),
+	}
+
+	return re.JSON(201, note)
 }
 
-func DeleteNote(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid note ID", http.StatusBadRequest)
-		return
+func UpdateNote(re *core.RequestEvent, app core.App) error {
+	id := re.Request.PathValue("id")
+
+	var noteReq NoteRequest
+	if err := json.NewDecoder(re.Request.Body).Decode(&noteReq); err != nil {
+		return re.JSON(400, map[string]string{"error": "Invalid JSON"})
 	}
 
-	_, err = database.DB.Exec("DELETE FROM notes WHERE id = ?", id)
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	record, err := app.FindRecordById(collection, id)
+	if err != nil {
+		return re.JSON(404, map[string]string{"error": "Note not found"})
+	}
+
+	record.Set("title", noteReq.Title)
+	record.Set("content", noteReq.Content)
+	record.Set("date", noteReq.Date)
+
+	if err := app.Save(record); err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to update note"})
+	}
+
+	note := map[string]interface{}{
+		"id":         record.Id,
+		"title":      record.GetString("title"),
+		"content":    record.GetString("content"),
+		"date":       record.GetString("date"),
+		"created_at": record.GetDateTime("created"),
+		"updated_at": record.GetDateTime("updated"),
+	}
+
+	return re.JSON(200, note)
 }
 
-func GetNotesByDate(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	dateStr := vars["date"]
-	
-	date, err := time.Parse("2006-01-02", dateStr)
+func DeleteNote(re *core.RequestEvent, app core.App) error {
+	id := re.Request.PathValue("id")
+
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
-		return
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	rows, err := database.DB.Query("SELECT id, title, content, date, created_at, updated_at FROM notes WHERE date = ? ORDER BY created_at DESC", date)
+	record, err := app.FindRecordById(collection, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var notes []models.Note
-	for rows.Next() {
-		var note models.Note
-		var dateTime time.Time
-		err := rows.Scan(&note.ID, &note.Title, &note.Content, &dateTime, &note.CreatedAt, &note.UpdatedAt)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		note.Date = models.CustomDate{dateTime}
-		notes = append(notes, note)
+		return re.JSON(404, map[string]string{"error": "Note not found"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notes)
+	if err := app.Delete(record); err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to delete note"})
+	}
+
+	return re.NoContent(204)
 }
 
-func SearchNotes(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
+func GetNotesByDate(re *core.RequestEvent, app core.App) error {
+	dateStr := re.Request.PathValue("date")
+
+	_, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return re.JSON(400, map[string]string{"error": "Invalid date format. Use YYYY-MM-DD"})
+	}
+
+	collection, err := app.FindCollectionByNameOrId("notes")
+	if err != nil {
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
+	}
+
+	filter := fmt.Sprintf("date = '%s'", dateStr)
+	records, err := app.FindRecordsByFilter(collection, filter, "-created", 0, 0)
+	if err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to fetch notes"})
+	}
+
+	var notes []map[string]interface{}
+	for _, record := range records {
+		notes = append(notes, map[string]interface{}{
+			"id":         record.Id,
+			"title":      record.GetString("title"),
+			"content":    record.GetString("content"),
+			"date":       record.GetString("date"),
+			"created_at": record.GetDateTime("created"),
+			"updated_at": record.GetDateTime("updated"),
+		})
+	}
+
+	return re.JSON(200, notes)
+}
+
+func SearchNotes(re *core.RequestEvent, app core.App) error {
+	query := re.Request.URL.Query().Get("q")
 	if query == "" {
-		http.Error(w, "Search query is required", http.StatusBadRequest)
-		return
+		return re.JSON(400, map[string]string{"error": "Search query is required"})
 	}
 
-	searchTerm := "%" + query + "%"
-	rows, err := database.DB.Query(
-		"SELECT id, title, content, date, created_at, updated_at FROM notes WHERE title LIKE ? OR content LIKE ? ORDER BY date DESC",
-		searchTerm, searchTerm)
+	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var notes []models.Note
-	for rows.Next() {
-		var note models.Note
-		var dateTime time.Time
-		err := rows.Scan(&note.ID, &note.Title, &note.Content, &dateTime, &note.CreatedAt, &note.UpdatedAt)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		note.Date = models.CustomDate{dateTime}
-		notes = append(notes, note)
+		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notes)
+	escapedQuery := strings.ReplaceAll(query, "'", "''")
+	filter := fmt.Sprintf("title ~ '%s' || content ~ '%s'", escapedQuery, escapedQuery)
+	records, err := app.FindRecordsByFilter(collection, filter, "-date", 0, 0)
+	if err != nil {
+		return re.JSON(500, map[string]string{"error": "Failed to search notes"})
+	}
+
+	var notes []map[string]interface{}
+	for _, record := range records {
+		notes = append(notes, map[string]interface{}{
+			"id":         record.Id,
+			"title":      record.GetString("title"),
+			"content":    record.GetString("content"),
+			"date":       record.GetString("date"),
+			"created_at": record.GetDateTime("created"),
+			"updated_at": record.GetDateTime("updated"),
+		})
+	}
+
+	return re.JSON(200, notes)
 }

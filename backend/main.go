@@ -2,49 +2,28 @@ package main
 
 import (
 	"log"
-	"net/http"
-
 	"rumi-backend/database"
-	"rumi-backend/handlers"
+	"rumi-backend/routes"
 
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 func main() {
-	// Initialize database
-	database.InitDB()
-	defer database.CloseDB()
+	app := pocketbase.New()
 
-	r := mux.NewRouter()
+	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		if err := database.EnsureNotesCollection(se.App); err != nil {
+			log.Fatalf("Failed to ensure notes collection: %v", err)
+		}
 
-	// API routes
-	api := r.PathPrefix("/api").Subrouter()
-	
-	// Health check
-	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok"}`))
-	}).Methods("GET")
+		routes.Setup(se, app)
 
-	// Notes routes
-	api.HandleFunc("/notes", handlers.GetNotes).Methods("GET")
-	api.HandleFunc("/notes", handlers.CreateNote).Methods("POST")
-	api.HandleFunc("/notes/{id}", handlers.GetNote).Methods("GET")
-	api.HandleFunc("/notes/{id}", handlers.UpdateNote).Methods("PUT")
-	api.HandleFunc("/notes/{id}", handlers.DeleteNote).Methods("DELETE")
-	api.HandleFunc("/notes/date/{date}", handlers.GetNotesByDate).Methods("GET")
-	api.HandleFunc("/search", handlers.SearchNotes).Methods("GET")
-
-	// Setup CORS
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
+		log.Printf("Server started on %s", se.Server.Addr)
+		return se.Next()
 	})
 
-	handler := c.Handler(r)
-
-	log.Println("Server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	if err := app.Start(); err != nil {
+		log.Fatal(err)
+	}
 }
