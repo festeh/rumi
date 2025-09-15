@@ -1,0 +1,93 @@
+name: Deploy Backend to VPS
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache-dependency-path: backend/go.sum
+
+    - name: Build backend
+      run: |
+        cd backend
+        go mod download
+        CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o rumi-backend main.go
+
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.1.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: root
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          # Stop the service if running
+          sudo systemctl stop rumi-backend || true
+
+          # Create directory if it doesn't exist
+          sudo mkdir -p /root/rumi
+
+          # Set proper ownership
+          sudo chown -R root:root /root/rumi
+
+    - name: Copy files to VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.HOST }}
+        username: root
+        key: ${{ secrets.SSH_KEY }}
+        source: "backend/rumi-backend"
+        target: "/root/rumi/"
+        strip_components: 1
+
+    - name: Setup systemd service and start
+      uses: appleboy/ssh-action@v1.1.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: root
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          # Make binary executable
+          sudo chmod +x /root/rumi/rumi-backend
+
+          # Create systemd service file
+          sudo tee /etc/systemd/system/rumi-backend.service > /dev/null <<EOF
+          [Unit]
+          Description=Rumi Backend Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/root/rumi
+          ExecStart=/root/rumi/rumi-backend serve --http=127.0.0.1:9090
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+          SyslogIdentifier=rumi-backend
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          # Reload systemd and start service
+          sudo systemctl daemon-reload
+          sudo systemctl enable rumi-backend
+          sudo systemctl start rumi-backend
+
+          # Check service status
+          sudo systemctl status rumi-backend --no-pager -l
