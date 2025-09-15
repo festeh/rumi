@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"rumi-backend/handlers"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -13,7 +14,16 @@ func SetCORSHeaders(re *core.RequestEvent) {
 }
 
 func Setup(se *core.ServeEvent, app core.App) {
+	log.Printf("Setting up custom routes...")
+
+	// Simple health check route
+	se.Router.GET("/health", func(re *core.RequestEvent) error {
+		log.Printf("GET /health request received")
+		return re.JSON(200, map[string]string{"status": "ok", "service": "rumi-backend"})
+	})
+
 	se.Router.GET("/api/notes", func(re *core.RequestEvent) error {
+		log.Printf("GET /api/notes request received")
 		SetCORSHeaders(re)
 		return handlers.GetNotes(re, app)
 	})
