@@ -3,7 +3,10 @@ import 'package:http/http.dart' as http;
 import '../models/note.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080/api';
+  static const String baseUrl = String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: 'http://localhost:8080/api',
+  );
   
   static Future<List<Note>> getNotes() async {
     final response = await http.get(Uri.parse('$baseUrl/notes'));

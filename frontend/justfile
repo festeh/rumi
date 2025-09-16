@@ -1,0 +1,60 @@
+# Justfile for Rumi Flutter Frontend
+# Backend server configuration
+set dotenv-load
+backend_url := env_var('BACKEND_URL')
+
+# Run app on Linux with production backend
+run-linux:
+    flutter run -d linux --dart-define=BACKEND_URL={{backend_url}}
+
+# Run app on Android with production backend
+run-android:
+    flutter run -d android --dart-define=BACKEND_URL={{backend_url}}
+
+# Run app on Linux with local backend (development)
+run-linux-dev:
+    flutter run -d linux
+
+# Run app on Android with local backend (development)
+run-android-dev:
+    flutter run -d android
+
+# Build Linux release
+build-linux:
+    flutter build linux --release --dart-define=BACKEND_URL={{backend_url}}
+
+# Build Android APK
+build-android-apk:
+    flutter build apk --release --dart-define=BACKEND_URL={{backend_url}}
+
+# Build Android App Bundle (for Play Store)
+build-android-aab:
+    flutter build appbundle --release --dart-define=BACKEND_URL={{backend_url}}
+
+# Clean build artifacts
+clean:
+    flutter clean
+
+# Install dependencies
+deps:
+    flutter pub get
+
+# Run tests
+test:
+    flutter test
+
+# Format code
+format:
+    dart format .
+
+# Analyze code
+analyze:
+    flutter analyze
+
+# Show available devices
+devices:
+    flutter devices
+
+# Show Flutter doctor info
+doctor:
+    flutter doctor
