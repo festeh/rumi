@@ -37,7 +37,7 @@ func GetNotes(re *core.RequestEvent, app core.App) error {
 
 	log.Printf("GetNotes: Successfully fetched %d records", len(records))
 
-	var notes []map[string]interface{}
+	notes := make([]map[string]interface{}, 0)
 	for _, record := range records {
 		notes = append(notes, map[string]interface{}{
 			"id":         record.Id,
@@ -191,7 +191,7 @@ func GetNotesByDate(re *core.RequestEvent, app core.App) error {
 		return re.JSON(500, map[string]string{"error": "Failed to fetch notes"})
 	}
 
-	var notes []map[string]interface{}
+	notes := make([]map[string]interface{}, 0)
 	for _, record := range records {
 		notes = append(notes, map[string]interface{}{
 			"id":         record.Id,
@@ -224,7 +224,7 @@ func SearchNotes(re *core.RequestEvent, app core.App) error {
 		return re.JSON(500, map[string]string{"error": "Failed to search notes"})
 	}
 
-	var notes []map[string]interface{}
+	notes := make([]map[string]interface{}, 0)
 	for _, record := range records {
 		notes = append(notes, map[string]interface{}{
 			"id":         record.Id,
