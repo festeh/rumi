@@ -1,5 +1,5 @@
 class Note {
-  final int? id;
+  final String? id;
   final String title;
   final String content;
   final DateTime date;
@@ -17,12 +17,16 @@ class Note {
 
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
-      id: json['id'],
+      id: json['id'] as String?,
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       date: DateTime.parse(json['date']),
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null && json['created_at'] != ''
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null && json['updated_at'] != ''
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -36,7 +40,7 @@ class Note {
   }
 
   Note copyWith({
-    int? id,
+    String? id,
     String? title,
     String? content,
     DateTime? date,

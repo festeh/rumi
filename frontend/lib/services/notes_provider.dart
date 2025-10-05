@@ -99,7 +99,7 @@ class NotesProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteNote(int id) async {
+  Future<void> deleteNote(String id) async {
     try {
       await ApiService.deleteNote(id);
       _notes.removeWhere((note) => note.id == id);

@@ -10,6 +10,13 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+func formatDateTime(dt time.Time) interface{} {
+	if dt.IsZero() {
+		return nil
+	}
+	return dt.Format(time.RFC3339)
+}
+
 type NoteRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -44,8 +51,8 @@ func GetNotes(re *core.RequestEvent, app core.App) error {
 			"title":      record.GetString("title"),
 			"content":    record.GetString("content"),
 			"date":       record.GetString("date"),
-			"created_at": record.GetDateTime("created"),
-			"updated_at": record.GetDateTime("updated"),
+			"created_at": formatDateTime(record.GetDateTime("created")),
+			"updated_at": formatDateTime(record.GetDateTime("updated")),
 		})
 	}
 
@@ -70,8 +77,8 @@ func GetNote(re *core.RequestEvent, app core.App) error {
 		"title":      record.GetString("title"),
 		"content":    record.GetString("content"),
 		"date":       record.GetString("date"),
-		"created_at": record.GetDateTime("created"),
-		"updated_at": record.GetDateTime("updated"),
+		"created_at": formatDateTime(record.GetDateTime("created")),
+		"updated_at": formatDateTime(record.GetDateTime("updated")),
 	}
 
 	return re.JSON(200, note)
@@ -107,8 +114,8 @@ func CreateNote(re *core.RequestEvent, app core.App) error {
 		"title":      record.GetString("title"),
 		"content":    record.GetString("content"),
 		"date":       record.GetString("date"),
-		"created_at": record.GetDateTime("created"),
-		"updated_at": record.GetDateTime("updated"),
+		"created_at": formatDateTime(record.GetDateTime("created")),
+		"updated_at": formatDateTime(record.GetDateTime("updated")),
 	}
 
 	return re.JSON(201, note)
@@ -145,8 +152,8 @@ func UpdateNote(re *core.RequestEvent, app core.App) error {
 		"title":      record.GetString("title"),
 		"content":    record.GetString("content"),
 		"date":       record.GetString("date"),
-		"created_at": record.GetDateTime("created"),
-		"updated_at": record.GetDateTime("updated"),
+		"created_at": formatDateTime(record.GetDateTime("created")),
+		"updated_at": formatDateTime(record.GetDateTime("updated")),
 	}
 
 	return re.JSON(200, note)
@@ -198,8 +205,8 @@ func GetNotesByDate(re *core.RequestEvent, app core.App) error {
 			"title":      record.GetString("title"),
 			"content":    record.GetString("content"),
 			"date":       record.GetString("date"),
-			"created_at": record.GetDateTime("created"),
-			"updated_at": record.GetDateTime("updated"),
+			"created_at": formatDateTime(record.GetDateTime("created")),
+			"updated_at": formatDateTime(record.GetDateTime("updated")),
 		})
 	}
 
@@ -231,8 +238,8 @@ func SearchNotes(re *core.RequestEvent, app core.App) error {
 			"title":      record.GetString("title"),
 			"content":    record.GetString("content"),
 			"date":       record.GetString("date"),
-			"created_at": record.GetDateTime("created"),
-			"updated_at": record.GetDateTime("updated"),
+			"created_at": formatDateTime(record.GetDateTime("created")),
+			"updated_at": formatDateTime(record.GetDateTime("updated")),
 		})
 	}
 

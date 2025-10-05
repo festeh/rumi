@@ -34,13 +34,9 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     _titleController.addListener(_onTextChanged);
     _contentController.addListener(_onTextChanged);
 
-    // Auto-focus based on content
+    // Auto-focus on content field
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.note.title.isEmpty) {
-        _titleFocusNode.requestFocus();
-      } else if (widget.note.content.isEmpty) {
-        _contentFocusNode.requestFocus();
-      }
+      _contentFocusNode.requestFocus();
     });
   }
 

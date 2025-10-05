@@ -5,13 +5,14 @@ import (
 )
 
 func EnsureNotesCollection(app core.App) error {
-	_, err := app.FindCollectionByNameOrId("notes")
-	if err == nil {
-		return nil
+	collection, err := app.FindCollectionByNameOrId("notes")
+
+	// If collection doesn't exist, create it
+	if err != nil {
+		collection = core.NewBaseCollection("notes")
 	}
 
-	collection := core.NewBaseCollection("notes")
-
+	// Ensure all required fields exist
 	titleField := &core.TextField{
 		Name:     "title",
 		Required: true,
@@ -29,9 +30,33 @@ func EnsureNotesCollection(app core.App) error {
 		Required: true,
 	}
 
-	collection.Fields.Add(titleField)
-	collection.Fields.Add(contentField)
-	collection.Fields.Add(dateField)
+	createdField := &core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	}
+
+	updatedField := &core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
+	}
+
+	// Add fields if they don't exist
+	if collection.Fields.GetByName("title") == nil {
+		collection.Fields.Add(titleField)
+	}
+	if collection.Fields.GetByName("content") == nil {
+		collection.Fields.Add(contentField)
+	}
+	if collection.Fields.GetByName("date") == nil {
+		collection.Fields.Add(dateField)
+	}
+	if collection.Fields.GetByName("created") == nil {
+		collection.Fields.Add(createdField)
+	}
+	if collection.Fields.GetByName("updated") == nil {
+		collection.Fields.Add(updatedField)
+	}
 
 	if err := app.Save(collection); err != nil {
 		return err

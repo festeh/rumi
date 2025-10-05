@@ -46,9 +46,9 @@ class ApiService {
     }
   }
 
-  static Future<Note> getNote(int id) async {
+  static Future<Note> getNote(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/notes/$id'));
-    
+
     if (response.statusCode == 200) {
       return Note.fromJson(json.decode(response.body));
     } else {
@@ -84,9 +84,9 @@ class ApiService {
     }
   }
 
-  static Future<void> deleteNote(int id) async {
+  static Future<void> deleteNote(String id) async {
     final response = await http.delete(Uri.parse('$baseUrl/notes/$id'));
-    
+
     if (response.statusCode != 204) {
       throw Exception('Failed to delete note');
     }
