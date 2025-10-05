@@ -14,8 +14,8 @@ class DatePickerWidget extends StatelessWidget {
         
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          height: 60,
-          child: Row(
+          child: IntrinsicHeight(
+            child: Row(
             children: [
               // Previous day button
               IconButton(
@@ -36,12 +36,14 @@ class DatePickerWidget extends StatelessWidget {
                       horizontal: 16.0,
                       vertical: 12.0,
                     ),
+                    constraints: const BoxConstraints(minHeight: 56),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _formatSelectedDate(selectedDate),
@@ -73,6 +75,7 @@ class DatePickerWidget extends StatelessWidget {
                 },
               ),
             ],
+            ),
           ),
         );
       },

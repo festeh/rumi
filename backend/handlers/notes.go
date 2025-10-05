@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -16,15 +17,25 @@ type NoteRequest struct {
 }
 
 func GetNotes(re *core.RequestEvent, app core.App) error {
+	log.Printf("GetNotes: Starting to fetch notes")
+
 	collection, err := app.FindCollectionByNameOrId("notes")
 	if err != nil {
+		log.Printf("GetNotes: Failed to find collection 'notes': %v", err)
 		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	records, err := app.FindRecordsByFilter(collection, "1=1", "-date,-created", 0, 0)
+	log.Printf("GetNotes: Found collection 'notes', ID: %s", collection.Id)
+	log.Printf("GetNotes: Collection fields: %+v", collection.Fields)
+
+	records, err := app.FindRecordsByFilter(collection, "1=1", "-date", 0, 0)
 	if err != nil {
-		return re.JSON(500, map[string]string{"error": "Failed to fetch notes"})
+		log.Printf("GetNotes: FindRecordsByFilter failed - Error: %v", err)
+		log.Printf("GetNotes: Query details - Collection: %s, Filter: '1=1', Sort: '-date'", collection.Name)
+		return re.JSON(500, map[string]string{"error": "Failed to fetch notes", "details": err.Error()})
 	}
+
+	log.Printf("GetNotes: Successfully fetched %d records", len(records))
 
 	var notes []map[string]interface{}
 	for _, record := range records {
