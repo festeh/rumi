@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
-func formatDateTime(dt time.Time) interface{} {
+func formatDateTime(dt types.DateTime) interface{} {
 	if dt.IsZero() {
 		return nil
 	}
-	return dt.Format(time.RFC3339)
+	return dt.Time().Format(time.RFC3339)
 }
 
 type NoteRequest struct {
