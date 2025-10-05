@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Colors.red.shade200),
                             ),
-                            child: Text(
+                            child: SelectableText(
                               '${notesProvider.errorMessage}',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontFamily: 'monospace',

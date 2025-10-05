@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/note.dart';
@@ -140,7 +141,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -149,11 +150,32 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
   }
 
+  Future<void> _handleEscape() async {
+    if (!_hasChanges) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final shouldPop = await _onWillPop();
+    if (shouldPop && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+          _handleEscape();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
         appBar: AppBar(
           title: Text(widget.note.id == null ? 'New Note' : 'Edit Note'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -285,6 +307,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                 ),
               )
             : null,
+        ),
       ),
     );
   }
