@@ -15,7 +15,7 @@ func formatDateTime(dt types.DateTime) interface{} {
 	if dt.IsZero() {
 		return nil
 	}
-	return dt.Time().Format(time.RFC3339)
+	return dt.Time().Local().Format(time.RFC3339)
 }
 
 type NoteRequest struct {
