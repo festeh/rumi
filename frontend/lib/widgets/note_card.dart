@@ -29,7 +29,7 @@ class NoteCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with title and actions (only if title exists)
+              // Header with title and delete button
               if (note.title.isNotEmpty) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,105 +44,47 @@ class NoteCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // More options button
-                    PopupMenuButton<String>(
+                    IconButton(
                       icon: Icon(
-                        Icons.more_vert,
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        Icons.delete_outline,
+                        color: colorScheme.error,
                       ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'edit':
-                            onTap();
-                            break;
-                          case 'delete':
-                            onDelete();
-                            break;
-                        }
-                      },
-                      itemBuilder: (BuildContext context) => [
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
+                      onPressed: onDelete,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
                 if (note.content.isNotEmpty)
                   const SizedBox(height: 8),
-              ] else if (note.title.isEmpty) ...[
-                // Menu button only when no title
-                Row(
-                  children: [
-                    const Spacer(),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'edit':
-                            onTap();
-                            break;
-                          case 'delete':
-                            onDelete();
-                            break;
-                        }
-                      },
-                      itemBuilder: (BuildContext context) => [
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
               ],
 
-              // Content preview
+              // Content preview with delete button on same row if no title
               if (note.content.isNotEmpty)
-                Text(
-                  note.content,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        note.content,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (note.title.isEmpty)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: colorScheme.error,
+                        ),
+                        onPressed: onDelete,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
                 ),
               
               // Footer with date and time
