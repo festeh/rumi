@@ -174,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Choose which notes to display
                 List<Note> notesToShow;
                 String title;
-                
+
                 if (_searchResults != null) {
                   notesToShow = _searchResults!;
                   title = 'Search Results (${_searchResults!.length})';
@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   notesToShow = notesProvider.notesForSelectedDate;
                   final selectedDate = notesProvider.selectedDate;
                   final isToday = _isToday(selectedDate);
-                  title = isToday 
+                  title = isToday
                       ? 'Today\'s Notes (${notesToShow.length})'
                       : '${DateFormat('MMM dd, yyyy').format(selectedDate)} (${notesToShow.length})';
                 }

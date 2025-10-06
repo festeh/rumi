@@ -15,7 +15,7 @@ func EnsureNotesCollection(app core.App) error {
 	// Ensure all required fields exist
 	titleField := &core.TextField{
 		Name:     "title",
-		Required: true,
+		Required: false,
 		Max:      255,
 	}
 

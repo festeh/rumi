@@ -68,7 +68,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
 
     final updatedNote = widget.note.copyWith(
-      title: _titleController.text.trim().isEmpty ? 'Untitled' : _titleController.text.trim(),
+      title: _titleController.text.trim(),
       content: _contentController.text,
       date: _selectedDate,
     );
