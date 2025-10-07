@@ -19,16 +19,25 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   final _contentController = TextEditingController();
   final _titleFocusNode = FocusNode();
   final _contentFocusNode = FocusNode();
-  
+
   bool _hasChanges = false;
   bool _isSaving = false;
   DateTime _selectedDate = DateTime.now();
 
+  // Store original values to detect actual changes
+  late String _originalTitle;
+  late String _originalContent;
+
   @override
   void initState() {
     super.initState();
-    _titleController.text = widget.note.title;
-    _contentController.text = widget.note.content;
+
+    // Store original values
+    _originalTitle = widget.note.title;
+    _originalContent = widget.note.content;
+
+    _titleController.text = _originalTitle;
+    _contentController.text = _originalContent;
     _selectedDate = widget.note.date;
 
     _titleController.addListener(_onTextChanged);
@@ -49,12 +58,19 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     super.dispose();
   }
 
-  void _onTextChanged() {
-    if (!_hasChanges) {
+  void _checkForChanges() {
+    final hasChanges = _titleController.text != _originalTitle ||
+                       _contentController.text != _originalContent;
+
+    if (hasChanges != _hasChanges) {
       setState(() {
-        _hasChanges = true;
+        _hasChanges = hasChanges;
       });
     }
+  }
+
+  void _onTextChanged() {
+    _checkForChanges();
   }
 
   Future<void> _saveNote() async {
@@ -141,7 +157,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _hasChanges = true;
       });
     }
   }
