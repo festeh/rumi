@@ -69,7 +69,7 @@ class DatePickerWidget extends StatelessWidget {
               // Next day button
               IconButton(
                 icon: const Icon(Icons.chevron_right),
-                onPressed: () {
+                onPressed: _isToday(selectedDate) ? null : () {
                   final nextDay = selectedDate.add(const Duration(days: 1));
                   notesProvider.setSelectedDate(nextDay);
                 },
@@ -105,11 +105,13 @@ class DatePickerWidget extends StatelessWidget {
   }
 
   Future<void> _showDatePicker(BuildContext context, NotesProvider notesProvider) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: notesProvider.selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      lastDate: today,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
