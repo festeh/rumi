@@ -22,10 +22,10 @@ class Note {
       content: json['content'] ?? '',
       date: DateTime.parse(json['date']),
       createdAt: json['created_at'] != null && json['created_at'] != ''
-          ? DateTime.parse(json['created_at'])
+          ? DateTime.parse(json['created_at']).toLocal()
           : null,
       updatedAt: json['updated_at'] != null && json['updated_at'] != ''
-          ? DateTime.parse(json['updated_at'])
+          ? DateTime.parse(json['updated_at']).toLocal()
           : null,
     );
   }
