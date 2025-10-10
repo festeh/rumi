@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/note.dart';
 import '../services/notes_provider.dart';
+import '../services/audio_service.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final Note note;
@@ -19,9 +20,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   final _contentController = TextEditingController();
   final _titleFocusNode = FocusNode();
   final _contentFocusNode = FocusNode();
+  final _audioService = AudioService();
 
   bool _hasChanges = false;
   bool _isSaving = false;
+  bool _isRecording = false;
+  bool _isTranscribing = false;
   DateTime _selectedDate = DateTime.now();
 
   // Store original values to detect actual changes
@@ -55,6 +59,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     _contentController.dispose();
     _titleFocusNode.dispose();
     _contentFocusNode.dispose();
+    _audioService.dispose();
     super.dispose();
   }
 
@@ -173,6 +178,69 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
   }
 
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      // Stop recording and transcribe
+      setState(() {
+        _isRecording = false;
+        _isTranscribing = true;
+      });
+
+      try {
+        final filePath = await _audioService.stopRecording();
+        if (filePath != null) {
+          final transcription = await _audioService.transcribeAudio(filePath);
+
+          // Insert transcription at cursor position or append to content
+          final currentText = _contentController.text;
+          final selection = _contentController.selection;
+          final newText = currentText.replaceRange(
+            selection.start,
+            selection.end,
+            transcription,
+          );
+
+          _contentController.text = newText;
+          _contentController.selection = TextSelection.collapsed(
+            offset: selection.start + transcription.length,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isTranscribing = false;
+          });
+        }
+      }
+    } else {
+      // Start recording
+      try {
+        await _audioService.startRecording();
+        setState(() {
+          _isRecording = true;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error starting recording: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Focus(
@@ -191,6 +259,24 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           title: Text(widget.note.id == null ? 'New Note' : 'Edit Note'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
+            if (_isTranscribing)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(
+                  _isRecording ? Icons.stop : Icons.mic,
+                  color: _isRecording ? Colors.red : null,
+                ),
+                onPressed: _toggleRecording,
+                tooltip: _isRecording ? 'Stop Recording' : 'Start Recording',
+              ),
             if (_isSaving)
               const Padding(
                 padding: EdgeInsets.all(16.0),
