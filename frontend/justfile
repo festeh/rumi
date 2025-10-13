@@ -9,7 +9,7 @@ run-linux:
 
 # Run app on Android with production backend
 run-android:
-    flutter run -d android --dart-define=BACKEND_URL={{backend_url}}
+    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs) --dart-define=BACKEND_URL={{backend_url}}
 
 # Run app on Linux with local backend (development)
 run-linux-dev:
@@ -17,7 +17,7 @@ run-linux-dev:
 
 # Run app on Android with local backend (development)
 run-android-dev:
-    flutter run -d android
+    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs)
 
 # Build Linux release
 build-linux:
