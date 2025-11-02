@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/notes_provider.dart';
+import '../services/audio_service.dart';
 import '../widgets/note_card.dart';
 import '../widgets/date_picker_widget.dart';
 import 'note_editor_screen.dart';
@@ -16,7 +17,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final AudioService _audioService = AudioService();
   List<Note>? _searchResults;
+  bool _isRecording = false;
+  bool _isTranscribing = false;
+  String? _recordingPath;
 
   @override
   void initState() {
@@ -29,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _audioService.dispose();
     super.dispose();
   }
 
@@ -265,10 +271,39 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createNewNote,
-        label: const Text('New Note'),
-        icon: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(left: 30.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              onPressed: _isTranscribing ? null : _toggleRecording,
+              heroTag: 'mic_button',
+              backgroundColor: _isRecording
+                  ? Colors.red
+                  : (_isTranscribing
+                      ? Colors.grey
+                      : Theme.of(context).colorScheme.secondary),
+              child: _isTranscribing
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(_isRecording ? Icons.stop : Icons.mic),
+            ),
+            const SizedBox(width: 16),
+            FloatingActionButton.extended(
+              onPressed: _createNewNote,
+              heroTag: 'new_note_button',
+              label: const Text('New Note'),
+              icon: const Icon(Icons.add),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -331,5 +366,85 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      // Stop recording
+      setState(() {
+        _isRecording = false;
+        _isTranscribing = true;
+      });
+
+      try {
+        final path = await _audioService.stopRecording();
+        if (path != null && path.isNotEmpty) {
+          // Transcribe the audio
+          final transcribedText = await _audioService.transcribeAudio(path);
+
+          setState(() {
+            _isTranscribing = false;
+          });
+
+          // Create a new note with transcribed text
+          final selectedDate = context.read<NotesProvider>().selectedDate;
+          final newNote = Note(
+            title: '',
+            content: transcribedText,
+            date: selectedDate,
+          );
+
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NoteEditorScreen(note: newNote),
+              ),
+            );
+          }
+        } else {
+          setState(() {
+            _isTranscribing = false;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Recording failed')),
+            );
+          }
+        }
+      } catch (e) {
+        setState(() {
+          _isTranscribing = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    } else {
+      // Start recording
+      try {
+        final path = await _audioService.startRecording();
+        if (path != null) {
+          setState(() {
+            _isRecording = true;
+            _recordingPath = path;
+          });
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to start recording')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
   }
 }
