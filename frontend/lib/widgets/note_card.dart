@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/note.dart';
+import '../theme/tokens.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -18,14 +19,14 @@ class NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0),
+      margin: EdgeInsets.only(bottom: Spacing.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Radii.lg),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -48,6 +49,7 @@ class NoteCard extends StatelessWidget {
                       icon: Icon(
                         Icons.delete_outline,
                         color: colorScheme.error,
+                        size: IconSizes.md,
                       ),
                       onPressed: onDelete,
                       padding: EdgeInsets.zero,
@@ -56,7 +58,7 @@ class NoteCard extends StatelessWidget {
                   ],
                 ),
                 if (note.content.isNotEmpty)
-                  const SizedBox(height: 8),
+                  SizedBox(height: Spacing.sm),
               ],
 
               // Content preview with delete button on same row if no title
@@ -79,6 +81,7 @@ class NoteCard extends StatelessWidget {
                         icon: Icon(
                           Icons.delete_outline,
                           color: colorScheme.error,
+                          size: IconSizes.md,
                         ),
                         onPressed: onDelete,
                         padding: EdgeInsets.zero,
@@ -86,18 +89,18 @@ class NoteCard extends StatelessWidget {
                       ),
                   ],
                 ),
-              
+
               // Footer with date and time
               Container(
-                margin: const EdgeInsets.only(top: 12),
+                margin: EdgeInsets.only(top: Spacing.md),
                 child: Row(
                   children: [
                     Icon(
                       Icons.access_time,
-                      size: 14,
+                      size: IconSizes.sm,
                       color: colorScheme.onSurface.withOpacity(0.6),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: Spacing.xs),
                     Text(
                       _formatDateTime(note.updatedAt ?? note.createdAt ?? note.date),
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -105,13 +108,13 @@ class NoteCard extends StatelessWidget {
                       ),
                     ),
                     if (!_isToday(note.date)) ...[
-                      const SizedBox(width: 12),
+                      SizedBox(width: Spacing.md),
                       Icon(
                         Icons.calendar_today,
-                        size: 14,
+                        size: IconSizes.sm,
                         color: colorScheme.onSurface.withOpacity(0.6),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: Spacing.xs),
                       Text(
                         DateFormat('MMM dd').format(note.date),
                         style: theme.textTheme.bodySmall?.copyWith(

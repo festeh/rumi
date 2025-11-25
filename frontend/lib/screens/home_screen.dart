@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/notes_provider.dart';
 import '../services/audio_service.dart';
+import '../services/asr_settings_provider.dart';
 import '../widgets/note_card.dart';
 import '../widgets/date_picker_widget.dart';
+import '../theme/tokens.dart';
 import 'note_editor_screen.dart';
+import 'settings_screen.dart';
 import '../models/note.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -61,12 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Column(
-        children: [
-          // Search Bar with Calendar Button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Search Bar with Calendar and Settings Buttons
+            Padding(
+            padding: EdgeInsets.all(Spacing.lg),
             child: Row(
               children: [
                 Expanded(
@@ -81,16 +87,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: _clearSearch,
                             )
                           : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
                     ),
                     onChanged: _performSearch,
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: Spacing.sm),
                 IconButton(
                   icon: const Icon(Icons.today),
                   onPressed: () {
@@ -98,8 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   tooltip: 'Go to Today',
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    backgroundColor: colorScheme.primaryContainer,
                   ),
+                ),
+                SizedBox(width: Spacing.xs),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    );
+                  },
+                  tooltip: 'Settings',
                 ),
               ],
             ),
@@ -107,7 +119,9 @@ class _HomeScreenState extends State<HomeScreen> {
           
           // Date Picker (only show when not searching)
           if (_searchResults == null) const DatePickerWidget(),
-          
+          if (_searchResults == null) SizedBox(height: Spacing.lg),
+          if (_searchResults == null) Divider(height: 1, color: colorScheme.outline.withOpacity(0.2)),
+
           // Notes List
           Expanded(
             child: Consumer<NotesProvider>(
@@ -119,31 +133,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (notesProvider.errorMessage != null) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(Spacing.lg),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
-                            size: 64,
-                            color: Colors.red,
+                            size: IconSizes.xxxl,
+                            color: colorScheme.error,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: Spacing.lg),
                           Text(
                             'Connection Problem',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Colors.red,
+                              color: colorScheme.error,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: Spacing.md),
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(Spacing.md),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.shade200),
+                              color: colorScheme.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(Radii.md),
+                              border: Border.all(color: colorScheme.error.withOpacity(0.3)),
                             ),
                             child: SelectableText(
                               '${notesProvider.errorMessage}',
@@ -153,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               textAlign: TextAlign.left,
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: Spacing.xl),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -165,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 icon: const Icon(Icons.refresh),
                                 label: const Text('Retry'),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: Spacing.md),
                               OutlinedButton.icon(
                                 onPressed: () {
                                   notesProvider.clearError();
@@ -182,62 +196,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 // Choose which notes to display
-                List<Note> notesToShow;
-                String title;
+                final notesToShow = _searchResults ?? notesProvider.notesForSelectedDate;
 
-                if (_searchResults != null) {
-                  notesToShow = _searchResults!;
-                  title = 'Search Results (${_searchResults!.length})';
-                } else {
-                  notesToShow = notesProvider.notesForSelectedDate;
-                  final selectedDate = notesProvider.selectedDate;
-                  final isToday = _isToday(selectedDate);
-                  title = isToday
-                      ? 'Today\'s Notes (${notesToShow.length})'
-                      : '${DateFormat('MMM dd, yyyy').format(selectedDate)} (${notesToShow.length})';
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: notesToShow.isEmpty
-                          ? Center(
+                return notesToShow.isEmpty
+                    ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    _searchResults != null 
-                                        ? Icons.search_off 
+                                    _searchResults != null
+                                        ? Icons.search_off
                                         : Icons.note_add,
-                                    size: 64,
-                                    color: Colors.grey,
+                                    size: IconSizes.xxxl,
+                                    color: colorScheme.outline,
                                   ),
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: Spacing.lg),
                                   Text(
                                     _searchResults != null
                                         ? 'No notes found'
                                         : 'No notes for this date',
                                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Colors.grey,
+                                      color: colorScheme.outline,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: Spacing.sm),
                                   if (_searchResults == null)
                                     Text(
                                       'Tap the + button to create your first note',
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.grey,
+                                        color: colorScheme.outline,
                                       ),
                                     ),
                                 ],
@@ -252,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 }
                               },
                               child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
                                 itemCount: notesToShow.length,
                                 itemBuilder: (context, index) {
                                   return NoteCard(
@@ -262,17 +249,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   );
                                 },
                               ),
-                            ),
-                    ),
-                  ],
-                );
+                            );
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(left: 30.0),
+        padding: EdgeInsets.only(left: Spacing.xxxl),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -280,27 +265,26 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _isTranscribing ? null : _toggleRecording,
               heroTag: 'mic_button',
               backgroundColor: _isRecording
-                  ? Colors.red
+                  ? colorScheme.error
                   : (_isTranscribing
-                      ? Colors.grey
-                      : Theme.of(context).colorScheme.secondary),
+                      ? colorScheme.outline
+                      : colorScheme.secondary),
               child: _isTranscribing
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
+                  ? SizedBox(
+                      width: IconSizes.lg,
+                      height: IconSizes.lg,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: colorScheme.onSecondary,
                         strokeWidth: 2,
                       ),
                     )
                   : Icon(_isRecording ? Icons.stop : Icons.mic),
             ),
-            const SizedBox(width: 16),
-            FloatingActionButton.extended(
+            SizedBox(width: Spacing.lg),
+            FloatingActionButton(
               onPressed: _createNewNote,
               heroTag: 'new_note_button',
-              label: const Text('New Note'),
-              icon: const Icon(Icons.add),
+              child: const Icon(Icons.add),
             ),
           ],
         ),
@@ -379,14 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         final path = await _audioService.stopRecording();
         if (path != null && path.isNotEmpty) {
-          // Transcribe the audio
-          final transcribedText = await _audioService.transcribeAudio(path);
+          // Transcribe the audio with selected language
+          final languageCode = context.read<ASRSettingsProvider>().language.code;
+          final transcribedText = await _audioService.transcribeAudio(
+            path,
+            languageCode: languageCode,
+          );
 
-          setState(() {
-            _isTranscribing = false;
-          });
-
-          // Create a new note with transcribed text
+          // Create and save the note immediately
           final selectedDate = context.read<NotesProvider>().selectedDate;
           final newNote = Note(
             title: '',
@@ -394,11 +378,18 @@ class _HomeScreenState extends State<HomeScreen> {
             date: selectedDate,
           );
 
-          if (mounted) {
+          final savedNote = await context.read<NotesProvider>().createNote(newNote);
+
+          setState(() {
+            _isTranscribing = false;
+          });
+
+          // Open the already-saved note in the editor
+          if (mounted && savedNote != null) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => NoteEditorScreen(note: newNote),
+                builder: (context) => NoteEditorScreen(note: savedNote),
               ),
             );
           }

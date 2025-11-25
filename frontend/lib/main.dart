@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'services/notes_provider.dart';
+import 'services/theme_provider.dart';
+import 'services/asr_settings_provider.dart';
+import 'services/audio_service.dart';
 
 void main() {
+  // Validate required environment variables at startup
+  AudioService.validateConfig();
+
   runApp(const RumiApp());
 }
 
@@ -12,45 +18,21 @@ class RumiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => NotesProvider(),
-      child: MaterialApp(
-        title: 'Rumi - Daily Notes',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6B4E3D), // Warm brown
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          floatingActionButtonTheme: FloatingActionButtonThemeData(
-            backgroundColor: const Color(0xFF8B5D44),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6B4E3D),
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        home: const HomeScreen(),
-        debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NotesProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ASRSettingsProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Rumi - Daily Notes',
+            theme: themeProvider.themeData,
+            home: const HomeScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

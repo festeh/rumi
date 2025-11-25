@@ -73,15 +73,17 @@ class NotesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createNote(Note note) async {
+  Future<Note?> createNote(Note note) async {
     try {
       final newNote = await ApiService.createNote(note);
       _notes.add(newNote);
       _notes.sort((a, b) => b.date.compareTo(a.date));
       notifyListeners();
+      return newNote;
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
+      return null;
     }
   }
 

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    Rumi App Icon - Golden Spiral with Background
+    For iOS, Desktop, and non-adaptive contexts
+    Background: Catppuccin Mocha base (#1E1E2E)
+  -->
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1E1E2E"/>
+
+  <g transform="translate(256, 270)">
+    <!-- Golden spiral -->
+    <path
+      d="M 0,0
+         C 0,-5 4,-9 9,-9
+         C 18,-9 27,0 27,14
+         C 27,34 12,52 -14,52
+         C -48,52 -75,22 -75,-18
+         C -75,-70 -34,-112 29,-112
+         C 108,-112 168,-48 168,40
+         C 168,148 84,228 -36,228"
+      fill="none"
+      stroke="#CBA6F7"
+      stroke-width="32"
+      stroke-linecap="round"
+    />
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="8" fill="#CBA6F7"/>
+  </g>
+</svg>

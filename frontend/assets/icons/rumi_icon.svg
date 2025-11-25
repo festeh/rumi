@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    Rumi App Icon - Golden Spiral
+    Minimalistic, elegant, distinctive
+    Designed for Niagara Launcher compatibility (adaptive icon safe zone)
+  -->
+  <g transform="translate(256, 270)">
+    <!--
+      Golden spiral using Bézier curves
+      Ratio φ ≈ 1.618 between each quarter turn
+      Starts small at center, expands elegantly
+      Positioned slightly up for visual balance
+    -->
+    <path
+      d="M 0,0
+         C 0,-5 4,-9 9,-9
+         C 18,-9 27,0 27,14
+         C 27,34 12,52 -14,52
+         C -48,52 -75,22 -75,-18
+         C -75,-70 -34,-112 29,-112
+         C 108,-112 168,-48 168,40
+         C 168,148 84,228 -36,228"
+      fill="none"
+      stroke="#ffffff"
+      stroke-width="32"
+      stroke-linecap="round"
+    />
+    <!-- Center dot - the origin point, adds subtle refinement -->
+    <circle cx="0" cy="0" r="8" fill="#ffffff"/>
+  </g>
+</svg>

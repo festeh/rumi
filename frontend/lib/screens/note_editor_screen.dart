@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../models/note.dart';
 import '../services/notes_provider.dart';
 import '../services/audio_service.dart';
+import '../services/asr_settings_provider.dart';
+import '../theme/tokens.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final Note note;
@@ -109,7 +111,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving note: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -189,7 +191,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       try {
         final filePath = await _audioService.stopRecording();
         if (filePath != null) {
-          final transcription = await _audioService.transcribeAudio(filePath);
+          final languageCode = context.read<ASRSettingsProvider>().language.code;
+          final transcription = await _audioService.transcribeAudio(
+            filePath,
+            languageCode: languageCode,
+          );
 
           // Insert transcription at cursor position or append to content
           final currentText = _contentController.text;
@@ -210,7 +216,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -233,7 +239,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error starting recording: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -243,6 +249,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
@@ -257,33 +265,32 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         child: Scaffold(
         appBar: AppBar(
           title: Text(widget.note.id == null ? 'New Note' : 'Edit Note'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             if (_isTranscribing)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
+              Padding(
+                padding: EdgeInsets.all(Spacing.lg),
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  width: IconSizes.md,
+                  height: IconSizes.md,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
                 ),
               )
             else
               IconButton(
                 icon: Icon(
                   _isRecording ? Icons.stop : Icons.mic,
-                  color: _isRecording ? Colors.red : null,
+                  color: _isRecording ? colorScheme.error : null,
                 ),
                 onPressed: _toggleRecording,
                 tooltip: _isRecording ? 'Stop Recording' : 'Start Recording',
               ),
             if (_isSaving)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
+              Padding(
+                padding: EdgeInsets.all(Spacing.lg),
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  width: IconSizes.md,
+                  height: IconSizes.md,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
                 ),
               )
             else
@@ -294,28 +301,29 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           ],
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Date selector
               InkWell(
                 onTap: _selectDate,
+                borderRadius: BorderRadius.circular(Radii.md),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(Spacing.md),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
+                      color: colorScheme.outline.withOpacity(0.3),
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(Radii.md),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.calendar_today,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: colorScheme.primary,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: Spacing.md),
                       Text(
                         DateFormat('EEEE, MMM dd, yyyy').format(_selectedDate),
                         style: Theme.of(context).textTheme.bodyLarge,
@@ -323,15 +331,15 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                       const Spacer(),
                       Icon(
                         Icons.arrow_drop_down,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: colorScheme.onSurface,
                       ),
                     ],
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 16),
-              
+
+              SizedBox(height: Spacing.lg),
+
               // Title field
               TextField(
                 controller: _titleController,
@@ -347,9 +355,9 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 onSubmitted: (_) => _contentFocusNode.requestFocus(),
               ),
-              
+
               const Divider(),
-              
+
               // Content field
               Expanded(
                 child: TextField(
@@ -372,12 +380,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         ),
         bottomNavigationBar: _hasChanges
             ? Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(Spacing.lg),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: colorScheme.surface,
                   border: Border(
                     top: BorderSide(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      color: colorScheme.outline.withOpacity(0.2),
                     ),
                   ),
                 ),
@@ -385,14 +393,14 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   children: [
                     Icon(
                       Icons.edit,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
+                      size: IconSizes.sm,
+                      color: colorScheme.primary,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: Spacing.sm),
                     Text(
                       'Unsaved changes',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const Spacer(),

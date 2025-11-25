@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/notes_provider.dart';
+import '../theme/tokens.dart';
 
 class DatePickerWidget extends StatelessWidget {
   const DatePickerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Consumer<NotesProvider>(
       builder: (context, notesProvider, child) {
         final selectedDate = notesProvider.selectedDate;
-        
+
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          margin: EdgeInsets.symmetric(horizontal: Spacing.lg),
           child: IntrinsicHeight(
             child: Row(
             children: [
@@ -25,21 +28,21 @@ class DatePickerWidget extends StatelessWidget {
                   notesProvider.setSelectedDate(previousDay);
                 },
               ),
-              
+
               // Date display and picker
               Expanded(
                 child: InkWell(
                   onTap: () => _showDatePicker(context, notesProvider),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(Radii.md),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Spacing.lg,
+                      vertical: Spacing.md,
                     ),
                     constraints: const BoxConstraints(minHeight: 56),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(Radii.md),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -48,7 +51,7 @@ class DatePickerWidget extends StatelessWidget {
                         Text(
                           _formatSelectedDate(selectedDate),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -57,7 +60,7 @@ class DatePickerWidget extends StatelessWidget {
                           Text(
                             'Today',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                              color: colorScheme.onPrimaryContainer.withOpacity(0.8),
                             ),
                           ),
                       ],
@@ -65,7 +68,7 @@ class DatePickerWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Next day button
               IconButton(
                 icon: const Icon(Icons.chevron_right),

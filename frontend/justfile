@@ -2,34 +2,52 @@
 # Backend server configuration
 set dotenv-load
 backend_url := env_var('BACKEND_URL')
+transcription_url := env_var('TRANSCRIPTION_URL')
+
+# Check that all required environment variables are set
+check-env:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Checking environment variables..."
+    if [ -z "{{backend_url}}" ]; then
+        echo "❌ Error: BACKEND_URL is not set in .env file"
+        exit 1
+    fi
+    if [ -z "{{transcription_url}}" ]; then
+        echo "❌ Error: TRANSCRIPTION_URL is not set in .env file"
+        exit 1
+    fi
+    echo "✅ BACKEND_URL={{backend_url}}"
+    echo "✅ TRANSCRIPTION_URL={{transcription_url}}"
+    echo "✅ All environment variables are set"
 
 # Run app on Linux with production backend
-run-linux:
-    flutter run -d linux --dart-define=BACKEND_URL={{backend_url}}
+run-linux: check-env
+    flutter run -d linux --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Run app on Android with production backend
-run-android:
-    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs) --dart-define=BACKEND_URL={{backend_url}}
+run-android: check-env
+    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs) --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Run app on Linux with local backend (development)
-run-linux-dev:
-    flutter run -d linux
+run-linux-dev: check-env
+    flutter run -d linux --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Run app on Android with local backend (development)
-run-android-dev:
-    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs)
+run-android-dev: check-env
+    flutter run -d $(flutter devices | grep android | head -1 | awk -F'•' '{print $2}' | xargs) --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Build Linux release
-build-linux:
-    flutter build linux --release --dart-define=BACKEND_URL={{backend_url}}
+build-linux: check-env
+    flutter build linux --release --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Build Android APK
-build-android-apk:
-    flutter build apk --release --dart-define=BACKEND_URL={{backend_url}}
+build-android-apk: check-env
+    flutter build apk --release --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Build Android App Bundle (for Play Store)
-build-android-aab:
-    flutter build appbundle --release --dart-define=BACKEND_URL={{backend_url}}
+build-android-aab: check-env
+    flutter build appbundle --release --dart-define=BACKEND_URL={{backend_url}} --dart-define=TRANSCRIPTION_URL={{transcription_url}}
 
 # Clean build artifacts
 clean:
