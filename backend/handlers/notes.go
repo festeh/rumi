@@ -193,7 +193,7 @@ func GetNotesByDate(re *core.RequestEvent, app core.App) error {
 		return re.JSON(500, map[string]string{"error": "Collection not found"})
 	}
 
-	filter := fmt.Sprintf("date = '%s'", dateStr)
+	filter := fmt.Sprintf("date ~ '%s'", dateStr)
 	records, err := app.FindRecordsByFilter(collection, filter, "-created", 0, 0)
 	if err != nil {
 		return re.JSON(500, map[string]string{"error": "Failed to fetch notes"})
