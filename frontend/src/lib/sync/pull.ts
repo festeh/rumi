@@ -128,8 +128,8 @@ export async function pull(): Promise<PullResult | null> {
   const changedNodeIds = new Set<string>();
 
   for (const content of changes.content) {
-    const local = await db.select<{ is_dirty: number }[]>(
-      "SELECT is_dirty FROM fs_content WHERE node_id = $1",
+    const local = await db.select<{ is_dirty: number; body: string }[]>(
+      "SELECT is_dirty, body FROM fs_content WHERE node_id = $1",
       [content.node_id],
     );
 
@@ -144,13 +144,18 @@ export async function pull(): Promise<PullResult | null> {
 				 VALUES ($1, $2, $3, 0)`,
         [content.node_id, content.body, content.updated_at],
       );
+      changedNodeIds.add(content.node_id);
     } else {
+      // Skip echo-back: server returning bytes we already have triggers a
+      // cascade (tree reload + openFile) that disrupts the on-screen keyboard
+      // mid-edit on Android.
+      if (local[0].body === content.body) continue;
       await db.execute(
         `UPDATE fs_content SET body = $1, updated_at = $2 WHERE node_id = $3`,
         [content.body, content.updated_at, content.node_id],
       );
+      changedNodeIds.add(content.node_id);
     }
-    changedNodeIds.add(content.node_id);
   }
 
   await upsertSyncMeta(db, "last_sync_at", changes.server_time);
